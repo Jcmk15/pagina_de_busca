@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Página de Busca</title>
+    <link rel="stylesheet" href="./style.css">
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body onload="carregarDadosSalvos()">
+
+    <div id="container-busca">
+        <img id="logo-google" src="./img/google.png" alt="Logo do Google">
+        <input type="text" id="barra-busca" placeholder="O que você está procurando?" oninput="ocultarAreas()">
+
+        <button id="botao-busca" onclick="pesquisar()">Buscar</button>
+    </div>
+    
+    <div id="resultados-busca">
+        <!-- ... Resultados anteriores ... -->
+    </div>
+    
+    <div id="container-adicao" class="container-botao">
+        <input type="text" id="novo-titulo" class="entrada-botao" placeholder="palavra-chave para busca...">
+        <div id="container-frase" class="entrada-textarea">
+            <textarea id="nova-frase" placeholder="Detalhamento de Conteúdo..." style="width: 250px; height: 100px;"
+                class=""></textarea>
+        </div>
+        <input type="file" id="nova-imagem" accept="image/*">
+        <button id="botao-adicao" class="botao-adicionar" onclick="adicionarNovoTitulo()">Adicionar</button>
+    </div>
+
+    <script>
+        function exibirImagem() {
+            var inputImagem = document.getElementById("input-imagem");
+            var imagemResultado = document.getElementById("imagem-resultado");
+
+            var file = inputImagem.files[0];
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                imagemResultado.src = e.target.result;
+            };
+
+            if (file) {
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function criarResultadoBusca(titulo, frase, imagemSrc) {
+            var novoResultado = document.createElement("div");
+            novoResultado.className = "resultado-busca";
+
+            var tituloElemento = document.createElement("h2");
+            tituloElemento.textContent = titulo;
+
+            var fraseElemento = document.createElement("p");
+            fraseElemento.textContent = frase;
+
+            var editarBotao = criarBotao("Editar", function () {
+                editarTexto(novoResultado);
+            });
+
+            var excluirBotao = criarBotao("Excluir", function () {
+                excluirTexto(novoResultado);
+            });
+
+            var imagemResultado = document.createElement("img");
+            imagemResultado.src = imagemSrc;
+            imagemResultado.alt = "Imagem do resultado";
+
+            novoResultado.appendChild(tituloElemento);
+            novoResultado.appendChild(fraseElemento);
+            novoResultado.appendChild(editarBotao);
+            novoResultado.appendChild(excluirBotao);
+            novoResultado.appendChild(imagemResultado);
+            novoResultado.style.display = "none";
+
+            return novoResultado;
+        }
+
+        function criarBotao(texto, clickHandler) {
+            var botao = document.createElement("button");
+            botao.textContent = texto;
+            botao.onclick = clickHandler;
+            return botao;
+        }
+
+     
+        function adicionarNovoTitulo() {
+    var novoTitulo = document.getElementById("novo-titulo").value;
+    var novaFrase = document.getElementById("nova-frase").value;
+    var novaImagem = document.getElementById("nova-imagem").files[0];
+
+    if (!novoTitulo) {
+        alert("Por favor, insira um título.");
+        return;
+    }
+
+    if (novoTitulo && novaFrase && !novaImagem) {
+        // A: Título e Frase (Publicar)
+        var novoResultado = criarResultadoBusca(novoTitulo, novaFrase, "");
+        document.getElementById("resultados-busca").appendChild(novoResultado);
+    } else if (novoTitulo && !novaFrase && novaImagem) {
+        // B: Título e Imagem (Publicar)
+        var imagemSrc = URL.createObjectURL(novaImagem);
+        var novoResultado = criarResultadoBusca(novoTitulo, "", imagemSrc);
+        document.getElementById("resultados-busca").appendChild(novoResultado);
+    } else if (novoTitulo && novaFrase && novaImagem) {
+        // C: Título, Frase e Imagem (Não Publicar)
+        alert("Você não pode adicionar um título com frase e imagem ao mesmo tempo.");
+        return;
+    } else if (novoTitulo && !novaFrase && !novaImagem) {
+        // D: Somente Título (Não Publicar)
+        alert("Você precisa adicionar uma frase ou uma imagem para publicar.");
+        return;
+    } else if (!novoTitulo && novaFrase && !novaImagem) {
+        // E: Somente Frase (Não Publicar)
+        alert("Você precisa adicionar um título para publicar.");
+        return;
+    } else if (!novoTitulo && !novaFrase && novaImagem) {
+        // F: Somente Imagem (Não Publicar)
+        alert("Você precisa adicionar um título e/ou uma frase para publicar.");
+        return;
+    }
+
+    salvarDadosNoLocalStorage();
+    document.getElementById("novo-titulo").value = "";
+    document.getElementById("nova-frase").value = "";
+    document.getElementById("nova-imagem").value = "";
+}
+
+
+
+
+
+        function pesquisar() {
+            var termo = document.getElementById("barra-busca").value.toLowerCase();
+            var resultados = document.getElementsByClassName("resultado-busca");
+
+            for (var i = 0; i < resultados.length; i++) {
+                var titulo = resultados[i].getElementsByTagName("h2")[0].textContent.toLowerCase();
+                var frase = resultados[i].getElementsByTagName("p")[0].textContent.toLowerCase();
+
+                if (termo === "") {
+                    resultados[i].style.display = "none";
+                } else if (titulo.includes(termo) || frase.includes(termo)) {
+                    resultados[i].style.display = "block";
+                } else {
+                    resultados[i].style.display = "none";
+                }
+            }
+        }
+
+        function editarTexto(resultado) {
+            var novoTitulo = prompt("Novo título:");
+            var novaFrase = prompt("Nova frase:");
+
+            if (novoTitulo !== null && novaFrase !== null) {
+                resultado.getElementsByTagName("h2")[0].textContent = novoTitulo;
+                resultado.getElementsByTagName("p")[0].textContent = novaFrase;
+                salvarDadosNoLocalStorage();
+            }
+        }
+
+        function excluirTexto(resultado) {
+            if (confirm("Tem certeza que deseja excluir este resultado?")) {
+                resultado.remove();
+                salvarDadosNoLocalStorage();
+            }
+        }
+
+        function salvarDadosNoLocalStorage() {
+            var resultados = document.getElementsByClassName("resultado-busca");
+            var dados = [];
+
+            for (var i = 0; i < resultados.length; i++) {
+                var titulo = resultados[i].getElementsByTagName("h2")[0].textContent;
+                var frase = resultados[i].getElementsByTagName("p")[0].textContent;
+
+                dados.push({
+                    titulo: titulo,
+                    frase: frase
+                });
+            }
+
+            localStorage.setItem("dadosBusca", JSON.stringify(dados));
+        }
+
+        function carregarDadosSalvos() {
+            var dadosSalvos = localStorage.getItem("dadosBusca");
+
+            if (dadosSalvos) {
+                dadosSalvos = JSON.parse(dadosSalvos);
+
+                for (var i = 0; i < dadosSalvos.length; i++) {
+                    var novoResultado = criarResultadoBusca(dadosSalvos[i].titulo, dadosSalvos[i].frase);
+                    document.getElementById("resultados-busca").appendChild(novoResultado);
+                }
+            }
+        }
+
+        function ocultarAreas() {
+            var termo = document.getElementById("barra-busca").value.toLowerCase();
+            var resultados = document.getElementsByClassName("resultado-busca");
+
+            for (var i = 0; i < resultados.length; i++) {
+                var titulo = resultados[i].getElementsByTagName("h2")[0].textContent.toLowerCase();
+                var frase = resultados[i].getElementsByTagName("p")[0].textContent.toLowerCase();
+
+                //...
+            }
+
+            var novoTitulo = document.getElementById("novo-titulo");
+            var novaFrase = document.getElementById("nova-frase");
+
+            if (termo !== "") {
+                novoTitulo.classList.add("hidden");
+                novaFrase.classList.add("hidden");
+            } else {
+                novoTitulo.classList.remove("hidden");
+                novaFrase.classList.remove("hidden");
+            }
+        }
+    </script>
+
+    <script>
+        document.getElementById("barra-busca").addEventListener("keyup", function (event) {
+            if (event.key === "Enter") {
+                pesquisar();
+            }
+        });
+    </script>
+
+    <footer>
+        <p>© 2023 J.C T.I. Todos os direitos reservados.</p>
+    </footer>
+
+</body>
+
+</html>
+
